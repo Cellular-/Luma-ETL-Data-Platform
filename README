@@ -1,0 +1,116 @@
+# Infor ETL Tool
+
+A program for extracting data out of the Infor ERP system and moving it into the data warehouse.
+
+```
+.
+│   datalakewrapper.py                # Main function
+│   decorators.py                     # Helper functions structured as decorators
+│   definitions.py                    # Global variables
+│   extractionsdone.py                # Unused
+│   lambda_function.py                # A script that moves S3 data into SQL tables
+│   README                            # Documentation
+│   requirements.txt                  # Third-party dependencies
+|
+├───business-classes                  # Staging directory; files containing Infor business classes, to be targeted for ETL
+├───config                            # Files containing configuration details 
+├───creds                             # Files containing sensitive data (tokens, credentials, etc.)
+├───db                                # Depreciated; code for working with databases
+├───docs                              # Instructions for specific procedures
+├───metadata                          # Code for working with metadata
+├───oauth                             # Code for working with authentication
+├───resources                         # Code for working with data types
+├───review-to-delete                  # Unused; candidates for deletion
+├───tests                             # Code for running tests
+└───utilities                         # Code containing various helper functions
+    ├───aws  
+    └───helpers  
+```
+
+---
+
+## Setup
+
+1. Ensure Python 3.9.x is installed
+2. Create a virtual environment (`python -m venv venv`)
+2. Install third-party dependencies (`venv/Scripts/pip.exe install -r requirements.txt`)
+3. Place required credential files in `creds/` (i.e. `creds_AX5.json`)
+4. Place required configuration file in `config/app.config`
+5. Copy `resources/config` into `<username>/.aws/config`, creating directories and files as necessary
+
+---
+
+## Basic Usage
+
+```
+Infor -> S3 -> Staging -> Data Warehouse
+```
+
+***Load Subject Area***
+
+`$ workflow.ps1 load_pipeline_subject_area <subject_area_name>`
+
+Pull data from Infor into the Data Warehouse for an entire subject area. Logs
+can be found under `logs/`.
+
+---
+
+## Advanced Usage (Workflow Script)
+
+***Load S3 (Single Business Class)***
+
+`$ workflow.ps1 load_s3 <business_class_name>`
+
+Loads the latest data from Infor into S3 for a specific business class.
+
+***Load Staging Database Table (Single Business Class)***
+
+`$ workflow.ps1 load_staging <business_class_name>`
+
+Loads the latest data from S3 into a SQL Server staging table for a specific business class.
+
+***Load S3 (Subject Area)***
+
+`$ workflow.ps1 load_s3_subject_area <subject_area_name>`
+
+Loads the latest data from Infor into S3 for a group of business classes.
+
+***Load Staging Database Table (Subject Area)***
+
+`$ workflow.ps1 load_staging_subject_area <subject_area_name>`
+
+Loads the latest data from S3 into a SQL Server staging table for a group of business classes.
+
+***Load Data Warehouse (Subject Area)***
+
+`$ workflow.ps1 load_data_warehouse_subject_area <subject_area_name>`
+
+Loads the latest data from the Staging database table into the Data Warehouse table using a stored procedure.
+
+---
+
+## Advanced Usage (Direct)
+
+`venv/Scripts/python.exe -m metadata.deletetable`
+
+Individual functions can be run directly from Python.
+
+---
+
+## Notes
+
+* `config file` refers to file located in  `config/app.config`
+* Extraction groups consists of names of business classes separated by a newline.
+  * Business  class names typically follow the pattern `FSM_BusinessClassName`
+
+The application behavior is controlled by editing the `config file`.  The  `config file` stores the active tenant, datalake extraction group, dataset output destinations, etc.  In order to extract data, follow the steps in the Configuration  and  Extract  Data sections.
+
+---
+
+## Extract Data
+
+1. Set up extraction groups in  `extraction_groups` section in  `config file`.
+2. Set active extraction groups by typing names of extraction groups into the  `extractions` section `active` key separated by newline.
+3. Generate schemas for the business classes in the active extraction groups by running `python -m datalakewrapper --gs` on the terminal. Schemas must be generated before data is extracted.
+4. Perform incremental or full extraction for the business classes in active extractions groups by running `python -m datalakewrapper --ed --il` or `python -m datalakewrapper --ed --fl`. A message will appear on the terminal indicating if the record counts on the datalake match the records on the compiled csv files.
+5. Business class data and metadata are output to the `business_classes/ACTIVE_TENANT` folder.

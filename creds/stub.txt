@@ -1,0 +1,2 @@
+Stores datalake credentials, git crendentials and other credentials.
+Should never push credential files to repo.
